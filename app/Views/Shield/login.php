@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es" dir="ltr" data-bs-theme="dark" data-color-theme="Blue_Theme">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Favicon icon-->
+  <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/images/logos/favicon.png') ?>" />
+
+  <!-- Core Css -->
+  <link rel="stylesheet" href="<?= base_url('assets/css/styles.css') ?>" />
+
+  <title><?= $title ?? 'Login' ?></title>
+</head>
+
+<body>
+  <div id="main-wrapper">
+    <div class="position-relative overflow-hidden auth-bg min-vh-100 w-100 d-flex align-items-center justify-content-center">
+      <div class="d-flex align-items-center justify-content-center w-100">
+        <div class="row justify-content-center w-100">
+          <div class="col-md-8 col-lg-6 col-xxl-3 auth-card">
+            <div class="card mb-0">
+              <div class="card-body">
+                <a href="<?= base_url() ?>" class="text-nowrap logo-img text-center d-block mb-5 w-100">
+                  <img src="<?= base_url('assets/images/logos/logo.png') ?>" width="250" alt="Logo" />
+                </a>
+
+                <form action="<?= url_to('login') ?>" method="post">
+                  <?= csrf_field() ?>
+
+                  <div class="mb-3">
+                    <label for="email" class="form-label">Email / Usuario</label>
+                    <input type="text" class="form-control" id="email" name="email" value="<?= old('email') ?>" required>
+                  </div>
+                  <div class="mb-4">
+                    <label for="password" class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                  </div>
+                  <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div class="form-check">
+                      <input class="form-check-input primary" type="checkbox" name="remember" id="remember" <?= old('remember') ? 'checked' : '' ?>>
+                      <label class="form-check-label text-dark" for="remember"> Recordarme </label>
+                    </div>
+                  </div>
+                  <button type="submit" class="btn btn-primary w-100 py-8 mb-4 rounded-2">Entrar</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Js Files -->
+  <script src="<?= base_url('assets/js/vendor.min.js') ?>"></script>
+  <script src="<?= base_url('assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js') ?>"></script>
+  <script src="<?= base_url('assets/libs/simplebar/dist/simplebar.min.js') ?>"></script>
+  <script src="<?= base_url('assets/js/theme/app.dark.init.js') ?>"></script>
+  <script src="<?= base_url('assets/js/theme/theme.js') ?>"></script>
+  <script src="<?= base_url('assets/js/theme/app.min.js') ?>"></script>
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'bottom',
+      showConfirmButton: false,
+      timer: 4000,
+      timerProgressBar: true
+    });
+
+    <?php if (session('error') !== null) : ?>
+      Toast.fire({ icon: 'error', title: <?= json_encode(session('error')) ?> });
+    <?php elseif (session('errors') !== null) : ?>
+      <?php $allErrors = ""; foreach(session('errors') as $e) { $allErrors .= "• " . $e . "<br>"; } ?>
+      Toast.fire({ icon: 'error', title: '¡Error!', html: <?= json_encode('<div class="text-start fs-2">' . $allErrors . '</div>') ?> });
+    <?php endif ?>
+
+    <?php if (session('message') !== null) : ?>
+      Toast.fire({ icon: 'success', title: <?= json_encode(session('message')) ?> });
+    <?php endif ?>
+  </script>
+</body>
+
+</html>
