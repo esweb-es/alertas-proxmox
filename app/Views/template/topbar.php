@@ -97,7 +97,7 @@
             Versión 1.0.0
           </div>
           <p class="fs-2 text-muted mb-0">© <?= date('Y') ?> • Freddy De Abreu Alfonso</p>
-          <p class="fs-2 text-muted mb-0">Licencia Apache 2.0</p>
+          <p class="fs-2 text-muted mb-0">Licencia MIT</p>
         </div>
       </div>
     </div>
