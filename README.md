@@ -1,5 +1,7 @@
 # ProxmoxAlert - Manual de Uso
 
+![ProxmoxAlert Dashboard](public/assets/images/screenshots/screenshot.png)
+
 Manual operativo y técnico para desplegar, configurar y usar **Proxmox Alert**.
 
 ## Tabla de contenidos
