@@ -9,6 +9,7 @@
 
 # OS X Thumbnails
 ._*
+__MACOSX/
 
 # Windows image file caches
 Thumbs.db
@@ -64,8 +65,6 @@ Vagrantfile
 !/writable/debugbar/index.html
 
 php_errors.log
-# /writable/*.db
-# /writable/*.sqlite
 /writable/*.db-journal
 /writable/*.db-wal
 /writable/*.sqlite-journal

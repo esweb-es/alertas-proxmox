@@ -179,7 +179,7 @@ Qué hace:
   - `title`: `Proxmox no responde`
   - `message`: `Incidente de conectividad detectado en {host}. Caída registrada a las {YYYY-MM-DD HH:MM:SS}.`
 - Si el host vuelve a responder, resuelve automáticamente la alerta abierta con:
-  - `message`: `Conectividad restablecida en {host}. Recuperación registrada a las {YYYY-MM-DD HH:MM:SS}.`
+  - `message`: `Conectividad restablecida en {host} a las {YYYY-MM-DD HH:MM:SS}.`
 - Deduplicación por estado: mientras exista una alerta de ping abierta para la empresa, no crea duplicados.
 
 Respuesta:
