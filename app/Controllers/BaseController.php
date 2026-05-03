@@ -7,15 +7,11 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
-/**
- * BaseController provides a convenient place for loading components
- * and performing functions that are needed by all your controllers.
- */
 abstract class BaseController extends Controller
 {
-    /**
-     * @return void
-     */
+    // ---------------------------------------------------------------------
+    // Inicializar el controlador base compartido
+    // ---------------------------------------------------------------------
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);

@@ -93,11 +93,13 @@ Ruta principal:
 Datos relevantes al crear/editar:
 - `nombre` (obligatorio)
 - `email` (recomendado si se activan notificaciones)
+- `proxmox_host` (IP/hostname del host Proxmox a monitorear por ping)
 - `active` (empresa habilitada)
 - `send_email` (activa envío automático de correo)
 
 Comportamiento:
 - El sistema genera automáticamente un `webhook_token` único por empresa.
+- En edición de empresa (`/companies/edit/{id}` se puede ejecutar un ping manual con el botón `Ping`.
 
 ## 7. Integración con Proxmox (Webhook)
 Endpoint receptor:
@@ -158,7 +160,41 @@ Recomendación:
 4. Verificar SMTP de forma periódica.
 5. Revisar usuarios activos y permisos.
 
-## 11. Resolución de problemas
+## 11. Monitoreo de ping por cron (token interno)
+El sistema incluye un endpoint interno para ejecutar chequeo masivo de ping en todas las empresas activas con `proxmox_host` configurado.
+
+Configuración en `.env`:
+- `cron.pingToken = 'TOKEN_LARGO_Y_SEGURO'`
+
+Endpoint:
+- `GET /monitoring/ping-check/{token}`
+
+Ejemplo:
+- `https://tudominio.com/monitoring/ping-check/TU_TOKEN`
+
+Qué hace:
+- Recorre empresas activas con host configurado.
+- Ejecuta ping a cada host.
+- Si falla, crea alerta en `alertas` con:
+  - `title`: `Proxmox no responde`
+  - `message`: `Incidente de conectividad detectado en {host}. Caída registrada a las {YYYY-MM-DD HH:MM:SS}.`
+- Si el host vuelve a responder, resuelve automáticamente la alerta abierta con:
+  - `message`: `Conectividad restablecida en {host}. Recuperación registrada a las {YYYY-MM-DD HH:MM:SS}.`
+- Deduplicación por estado: mientras exista una alerta de ping abierta para la empresa, no crea duplicados.
+
+Respuesta:
+- Devuelve JSON con resumen: `total`, `ok`, `failed`, `alerts_created`, `alerts_skipped`, `alerts_resolved`.
+
+Uso recomendado en hosting (Cron):
+1. Crear tarea programada cada 5 minutos.
+2. Ejecutar llamada HTTP GET al endpoint con token.
+
+Seguridad:
+- Mantener el token solo en `.env`.
+- Rotar token si se comparte o filtra.
+- No publicar el enlace en lugares públicos.
+
+## 12. Resolución de problemas
 **No llegan alertas**
 - Verificar empresa activa.
 - Confirmar token de webhook.
@@ -173,3 +209,20 @@ Recomendación:
 - Confirmar ejecución de migraciones y seeders.
 - Revisar credenciales iniciales.
 
+**El cron de ping no crea alertas**
+- Verificar `cron.pingToken` en `.env`.
+- Confirmar que la URL del cron usa exactamente ese token.
+- Revisar que la empresa esté activa y tenga `proxmox_host` configurado.
+- Confirmar que el hosting permite ejecutar `ping` desde el servidor web.
+
+## 13. Rutas principales
+- `GET /login`
+- `GET /companies`
+- `GET /companies/create`
+- `GET /companies/edit/{id}`
+- `GET /companies/view/{id}`
+- `GET /companies/download-script/{id}`
+- `GET /companies/get-script/{id}`
+- `GET /companies/ping?host=IP_O_HOSTNAME` (ping manual desde UI)
+- `POST /webhook/proxmox/{token}`
+- `GET /monitoring/ping-check/{token}` (cron interno)

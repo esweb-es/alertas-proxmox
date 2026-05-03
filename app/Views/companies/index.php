@@ -1,4 +1,5 @@
 <div class="container-fluid">
+    <?php $cronPingToken = (string) env('cron.pingToken'); ?>
     <div class="card shadow-none position-relative overflow-hidden">
         <div class="card-body px-4 py-3">
             <div class="row align-items-center">
@@ -96,6 +97,13 @@
                                             <a class="dropdown-item d-flex align-items-center gap-3" href="javascript:void(0)" onclick="copyToClipboard('webhook-<?= $empresa->id ?>')">
                                                 <i class="fs-4 ti ti-copy"></i>Copiar Webhook
                                             </a>
+
+                                            <?php if ($cronPingToken !== ''): ?>
+                                            <span id="cron-link-<?= $empresa->id ?>" class="d-none"><?= base_url('monitoring/ping-check/' . $cronPingToken) ?></span>
+                                            <a class="dropdown-item d-flex align-items-center gap-3" href="javascript:void(0)" onclick="copyToClipboard('cron-link-<?= $empresa->id ?>')">
+                                                <i class="fs-4 ti ti-clock-play"></i>Copiar Link Cron Ping
+                                            </a>
+                                            <?php endif; ?>
                                             
                                             <a class="dropdown-item d-flex align-items-center gap-3" href="javascript:void(0)" onclick="copyScriptToClipboard(<?= $empresa->id ?>)">
                                                 <i class="fs-4 ti ti-terminal-2"></i>Copiar Script Proxmox

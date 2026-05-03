@@ -9,11 +9,17 @@ class CompanyController extends BaseController
 {
     protected $companyModel;
 
+    // ---------------------------------------------------------------------
+    // Inicializar modelo de empresas
+    // ---------------------------------------------------------------------
     public function __construct()
     {
         $this->companyModel = new CompanyModel();
     }
 
+    // ---------------------------------------------------------------------
+    // Listado general de empresas
+    // ---------------------------------------------------------------------
     public function index()
     {
         $data = [
@@ -26,6 +32,9 @@ class CompanyController extends BaseController
              . view('template/footer');
     }
 
+    // ---------------------------------------------------------------------
+    // Formulario para crear una empresa
+    // ---------------------------------------------------------------------
     public function create()
     {
         $data = [
@@ -37,11 +46,15 @@ class CompanyController extends BaseController
              . view('template/footer');
     }
 
+    // ---------------------------------------------------------------------
+    // Guardar una nueva empresa
+    // ---------------------------------------------------------------------
     public function store()
     {
         $rules = [
             'nombre' => 'required|min_length[3]',
             'email'  => 'permit_empty|valid_email',
+            'proxmox_host' => 'permit_empty|max_length[255]',
             'logo'   => 'permit_empty|is_image[logo]|max_size[logo,2048]',
         ];
 
@@ -52,6 +65,9 @@ class CompanyController extends BaseController
             ],
             'email' => [
                 'valid_email' => 'Introduce un correo electrónico válido.'
+            ],
+            'proxmox_host' => [
+                'max_length' => 'El IP/Hostname de Proxmox no puede superar los 255 caracteres.'
             ],
             'logo' => [
                 'is_image' => 'El archivo debe ser una imagen válida.',
@@ -69,6 +85,7 @@ class CompanyController extends BaseController
             'email'         => $this->request->getPost('email'),
             'telefono'      => $this->request->getPost('telefono'),
             'direccion'     => $this->request->getPost('direccion'),
+            'proxmox_host'  => $this->request->getPost('proxmox_host'),
             'active'        => $this->request->getPost('active') ? 1 : 0,
             'send_email'    => $this->request->getPost('send_email') ? 1 : 0,
             'webhook_token' => bin2hex(random_bytes(16)), // Token único y seguro
@@ -90,6 +107,9 @@ class CompanyController extends BaseController
         }
     }
 
+    // ---------------------------------------------------------------------
+    // Formulario de edición de empresa
+    // ---------------------------------------------------------------------
     public function edit($id)
     {
         $empresa = $this->companyModel->find($id);
@@ -108,6 +128,9 @@ class CompanyController extends BaseController
              . view('template/footer');
     }
 
+    // ---------------------------------------------------------------------
+    // Ver detalle de empresa y listado de alertas
+    // ---------------------------------------------------------------------
     public function view($id)
     {
         $empresa = $this->companyModel->find($id);
@@ -149,6 +172,9 @@ class CompanyController extends BaseController
              . view('template/footer');
     }
 
+    // ---------------------------------------------------------------------
+    // Actualizar una empresa existente
+    // ---------------------------------------------------------------------
     public function update($id)
     {
         $empresa = $this->companyModel->find($id);
@@ -160,6 +186,7 @@ class CompanyController extends BaseController
         $rules = [
             'nombre' => 'required|min_length[3]',
             'email'  => 'permit_empty|valid_email',
+            'proxmox_host' => 'permit_empty|max_length[255]',
             'logo'   => 'permit_empty|is_image[logo]|max_size[logo,2048]',
         ];
 
@@ -170,6 +197,9 @@ class CompanyController extends BaseController
             ],
             'email' => [
                 'valid_email' => 'Introduce un correo electrónico válido.'
+            ],
+            'proxmox_host' => [
+                'max_length' => 'El IP/Hostname de Proxmox no puede superar los 255 caracteres.'
             ],
             'logo' => [
                 'is_image' => 'El archivo debe ser una imagen válida.',
@@ -188,6 +218,7 @@ class CompanyController extends BaseController
             'email'     => $this->request->getPost('email'),
             'telefono'  => $this->request->getPost('telefono'),
             'direccion' => $this->request->getPost('direccion'),
+            'proxmox_host' => $this->request->getPost('proxmox_host'),
             'active'    => $this->request->getPost('active') ? 1 : 0,
             'send_email' => $this->request->getPost('send_email') ? 1 : 0,
         ];
@@ -221,6 +252,9 @@ class CompanyController extends BaseController
         }
     }
 
+    // ---------------------------------------------------------------------
+    // Eliminar empresa (soft delete)
+    // ---------------------------------------------------------------------
     public function delete($id)
     {
         if ($this->companyModel->delete($id)) {
@@ -228,6 +262,68 @@ class CompanyController extends BaseController
         }
 
         return redirect()->to('companies')->with('error', 'No se pudo eliminar la empresa.');
+    }
+
+    // ---------------------------------------------------------------------
+    // Verificar conectividad (ping) hacia IP/hostname de Proxmox
+    // ---------------------------------------------------------------------
+    public function ping()
+    {
+        // Host objetivo enviado desde el formulario
+        $host = trim((string) $this->request->getGet('host'));
+
+        // Validaciones básicas de entrada
+        if ($host === '') {
+            return $this->response->setStatusCode(400)->setJSON([
+                'ok' => false,
+                'message' => 'Debes indicar una IP o hostname.',
+            ]);
+        }
+
+        if (mb_strlen($host) > 255) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'ok' => false,
+                'message' => 'La IP/hostname es demasiado larga.',
+            ]);
+        }
+
+        // Aceptar únicamente IP válida o hostname simple
+        $isIp = filter_var($host, FILTER_VALIDATE_IP) !== false;
+        $isHostname = preg_match('/^[a-zA-Z0-9.-]+$/', $host) === 1;
+        if (! $isIp && ! $isHostname) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'ok' => false,
+                'message' => 'Formato inválido. Usa una IP o hostname válido.',
+            ]);
+        }
+
+        // Construir comando según sistema operativo
+        $escapedHost = escapeshellarg($host);
+        $command = strtoupper(PHP_OS_FAMILY) === 'DARWIN'
+            ? "ping -c 1 -W 2000 {$escapedHost} 2>&1"
+            : "ping -c 1 -W 2 {$escapedHost} 2>&1";
+
+        // Ejecutar ping y capturar salida
+        $output = [];
+        $exitCode = 1;
+        exec($command, $output, $exitCode);
+
+        $resultText = implode("\n", $output);
+
+        // Responder en JSON para consumo desde fetch
+        if ($exitCode === 0) {
+            return $this->response->setJSON([
+                'ok' => true,
+                'message' => 'Ping OK',
+                'details' => $resultText,
+            ]);
+        }
+
+        return $this->response->setStatusCode(422)->setJSON([
+            'ok' => false,
+            'message' => 'No responde',
+            'details' => $resultText,
+        ]);
     }
 
     // ---------------------------------------------------------------------
@@ -247,6 +343,9 @@ class CompanyController extends BaseController
         return $this->response->download('setup_proxmox_' . $cleanName . '.sh', $script);
     }
 
+    // ---------------------------------------------------------------------
+    // Obtener script de configuración de Proxmox en texto plano
+    // ---------------------------------------------------------------------
     public function getScript($id)
     {
         $empresa = $this->companyModel->find($id);
@@ -261,6 +360,9 @@ class CompanyController extends BaseController
         return $this->response->setBody($script)->setHeader('Content-Type', 'text/plain');
     }
 
+    // ---------------------------------------------------------------------
+    // Construir script bash para registrar webhook/matcher en Proxmox
+    // ---------------------------------------------------------------------
     private function generateProxmoxScript($empresa, $cleanName)
     {
         $webhookName = "webhook-" . $cleanName;
@@ -308,6 +410,9 @@ class CompanyController extends BaseController
         return $script;
     }
 
+    // ---------------------------------------------------------------------
+    // Generar slug seguro para nombres de webhook/matcher/archivo
+    // ---------------------------------------------------------------------
     private function slugify($text)
     {
         $text = preg_replace('~[^\pL\d]+~u', '_', $text);

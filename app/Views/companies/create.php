@@ -79,6 +79,13 @@
                             </div>
                         </div>
 
+                        <div class="mb-3">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="proxmox_host" name="proxmox_host" placeholder="IP o hostname de Proxmox" value="<?= old('proxmox_host') ?>">
+                                <label for="proxmox_host">IP/Hostname Proxmox</label>
+                            </div>
+                        </div>
+
                         <div class="row mb-4">
                             <div class="col-sm-6">
                                 <div class="form-check form-switch">

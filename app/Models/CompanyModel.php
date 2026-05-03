@@ -19,6 +19,7 @@ class CompanyModel extends Model
         'email',
         'telefono',
         'direccion',
+        'proxmox_host',
         'active',
         'webhook_token',
         'send_email'

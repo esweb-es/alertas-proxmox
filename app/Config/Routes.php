@@ -30,6 +30,7 @@ $routes->group('companies', ['namespace' => 'App\Controllers', 'filter' => 'sess
     $routes->post('store', 'CompanyController::store', ['filter' => 'permission:empresas.create']);
     $routes->get('edit/(:num)', 'CompanyController::edit/$1', ['filter' => 'permission:empresas.edit']);
     $routes->post('update/(:num)', 'CompanyController::update/$1', ['filter' => 'permission:empresas.edit']);
+    $routes->get('ping', 'CompanyController::ping', ['filter' => 'permission:empresas.edit']);
     $routes->get('view/(:num)', 'CompanyController::view/$1', ['filter' => 'permission:empresas.view']);
     $routes->get('download-script/(:num)', 'CompanyController::downloadScript/$1', ['filter' => 'permission:empresas.view']);
     $routes->get('get-script/(:num)', 'CompanyController::getScript/$1', ['filter' => 'permission:empresas.view']);
@@ -52,5 +53,8 @@ $routes->group('email', ['namespace' => 'App\Controllers', 'filter' => 'session'
 
 // Webhooks (Públicos o con validación de token propia)
 $routes->post('webhook/proxmox/(:any)', 'WebhookController::proxmox/$1');
+
+// Endpoint interno para cron (token en .env)
+$routes->get('monitoring/ping-check/(:segment)', 'MonitoringController::pingCheck/$1');
 
 service('auth')->routes($routes);
