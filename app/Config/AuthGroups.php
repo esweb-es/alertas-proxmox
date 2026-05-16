@@ -63,6 +63,8 @@ class AuthGroups extends ShieldAuthGroups
         'empresas.edit'       => 'Editar empresas',
         'empresas.delete'     => 'Eliminar empresas',
         'email.manage'        => 'Gestionar Email',
+        'ai.view'             => 'Ver configuración de IA',
+        'ai.manage'           => 'Gestionar configuración de IA',
     ];
 
     /**
@@ -77,6 +79,7 @@ class AuthGroups extends ShieldAuthGroups
             'users.*',
             'empresas.*',
             'email.*',
+            'ai.*',
         ],
         'admin' => [
             'admin.access',
@@ -86,6 +89,7 @@ class AuthGroups extends ShieldAuthGroups
             'empresas.view',
             'empresas.edit',
             'email.manage',
+            'ai.manage',
         ],
         'user' => [
             'empresas.view',

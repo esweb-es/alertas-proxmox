@@ -62,6 +62,9 @@
             <span class="hide-menu">Email</span>
           </a>
         </li>
+        <?php endif; ?>
+
+        <?php if (auth()->user()->can('ai.view')): ?>
         <li class="sidebar-item">
           <a class="sidebar-link" href="<?= base_url('ai') ?>" aria-expanded="false">
             <span>

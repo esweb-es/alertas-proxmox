@@ -95,4 +95,18 @@ class AlertController extends BaseController
 
         return redirect()->back()->with('message', $msg);
     }
+    // ---------------------------------------------------------------------
+    // Obtener el resumen de IA vía AJAX
+    // ---------------------------------------------------------------------
+    public function getSummary($id)
+    {
+        $alertModel = new AlertModel();
+        $alerta = $alertModel->find($id);
+
+        if ($alerta && !empty($alerta->ai_summary)) {
+            return $this->response->setJSON(['summary' => $alerta->ai_summary]);
+        }
+
+        return $this->response->setJSON(['summary' => null]);
+    }
 }

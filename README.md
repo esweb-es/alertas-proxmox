@@ -27,7 +27,9 @@ Capacidades principales:
 - Recepción de eventos vía webhook.
 - Clasificación de alertas por severidad.
 - Resolución y borrado controlado de alertas.
-- Envío de correo para alertas críticas.
+- Envío de correo premium para alertas críticas con acceso directo.
+- Resumen inteligente de alertas mediante IA (Gemini, ChatGPT, Ollama).
+- Filtrado inteligente de ruido en el Dashboard (solo Warning/Error).
 - Control de acceso por grupos y permisos.
 
 ## 2. Requisitos
@@ -147,7 +149,8 @@ Ruta de configuración:
 Capacidades:
 - **Proveedores**: Soporte para Google Gemini (vía OpenAI Compatible API), OpenAI ChatGPT y Ollama (Local).
 - **Consolidación**: Convierte logs técnicos extensos en un resumen legible de máximo 2 frases en español.
-- **Detección de errores**: Capacidad para identificar fallos específicos dentro de una lista de tareas exitosas.
+- **Robustez**: Limpieza automática de "pensamientos" (thought tags) de modelos de razonamiento (ej: DeepSeek-R1).
+- **Timeouts Optimizados**: Tiempo de espera de hasta 60s para garantizar respuestas de modelos complejos.
 
 Configuración:
 1. Ir al panel de **IA** y configurar el proveedor.
@@ -155,8 +158,9 @@ Configuración:
 3. En la gestión de **Empresa**, activar el switch **Resumen IA**.
 
 Visualización:
-- **Tabla**: Icono de robot 🤖 y preview del resumen bajo el título de la alerta.
+- **Dashboard**: Solo se notifican visualmente estados de Warning y Error para evitar ruido informativo.
 - **Detalle**: Bloque destacado con el resumen completo dentro del modal de la alerta.
+- **Email**: Notificaciones premium con botón de acceso directo al análisis de IA en el panel.
 
 ## 10. Usuarios, grupos y permisos
 Rutas clave:

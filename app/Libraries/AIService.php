@@ -64,34 +64,36 @@ class AIService
     /**
      * Genera un resumen de la alerta en español
      */
-    public function generateSummary(string $title, string $message, string $severity): ?string
+    public function generateSummary(string $title, string $message, string $severity, int $timeout = 15): ?string
     {
         if (!$this->isConfigured()) {
             return null;
         }
 
-        $prompt = "Eres un asistente de sistemas experto en Proxmox VE. Analiza esta alerta técnica y genera un resumen muy breve y claro en español (máximo 2 frases) que explique qué ha ocurrido y si es crítico. No uses formato markdown, solo texto plano.\n\n";
+        $prompt = "IMPORTANTE: RESPONDE ÚNICAMENTE CON EL RESUMEN. NO INCLUAS TU PENSAMIENTO, NI RAZONAMIENTO, NI EXPLICACIONES INTERNAS.\n\n";
+        $prompt .= "Eres un asistente de sistemas experto en Proxmox VE. Analiza esta alerta técnica y genera un resumen muy breve y claro en español (máximo 2 frases) que explique qué ha ocurrido y si es crítico. No uses formato markdown, solo texto plano.\n\n";
         $prompt .= "Título: {$title}\n";
         $prompt .= "Severidad: {$severity}\n";
         $prompt .= "Mensaje Técnico:\n{$message}";
 
-        return $this->callOpenAICompatible($prompt);
+        return $this->callOpenAICompatible($prompt, $timeout);
     }
 
     /**
      * Realiza la llamada a la API usando el formato compatible con OpenAI
      */
-    private function callOpenAICompatible(string $prompt): ?string
+    private function callOpenAICompatible(string $prompt, int $timeout = 15): ?string
     {
         $client = \Config\Services::curlrequest();
+        $targetUrl = $this->apiUrl;
 
         $headers = [
             'Content-Type' => 'application/json',
             'Accept'       => 'application/json',
         ];
 
-        // Añadir API Key si no es Ollama
-        if ($this->provider !== 'ollama') {
+        // Autenticación estándar para proveedores externos
+        if ($this->provider === 'gemini' || $this->provider === 'chatgpt') {
             $headers['Authorization'] = 'Bearer ' . $this->apiKey;
         }
 
@@ -104,29 +106,49 @@ class AIService
                 ]
             ],
             'temperature' => 0.3,
-            'max_tokens' => 150
+            'max_tokens' => 500
         ];
 
         try {
-            $response = $client->post($this->apiUrl, [
+            $response = $client->post($targetUrl, [
                 'headers' => $headers,
                 'json'    => $body,
-                'timeout' => 15,
+                'timeout' => 60,
                 'http_errors' => false
             ]);
 
             $status = $response->getStatusCode();
-            $data = json_decode($response->getBody(), true);
+            $responseBody = $response->getBody();
+            $data = json_decode($responseBody, true);
 
             if ($status === 200 && isset($data['choices'][0]['message']['content'])) {
-                return trim($data['choices'][0]['message']['content']);
+                $content = trim($data['choices'][0]['message']['content']);
+                
+                // Limpiar etiquetas de pensamiento (thought) si el modelo las incluye
+                $content = preg_replace('/<thought>.*?<\/thought>/s', '', $content);
+                
+                return trim($content);
             }
 
-            // Capturar error específico si existe
-            $errorMsg = $data['error']['message'] ?? ($data['message'] ?? 'Error desconocido');
+            // Capturar error específico si existe (formato OpenAI, Google o genérico)
+            $errorMsg = 'Error desconocido';
+            
+            // Si la respuesta es un array (como parece sugerir tu error), tomamos el primer elemento
+            $errorSource = (isset($data[0])) ? $data[0] : $data;
+
+            if (isset($errorSource['error']['message'])) {
+                $errorMsg = $errorSource['error']['message'];
+            } elseif (isset($errorSource['message'])) {
+                $errorMsg = $errorSource['message'];
+            } elseif (is_string($data)) {
+                $errorMsg = $data;
+            } else {
+                $errorMsg = substr($response->getBody(), 0, 150);
+            }
+
             $this->lastError = "API ({$status}): {$errorMsg}";
             
-            log_message('error', "[AIService] " . $this->lastError);
+            log_message('error', "[AIService] Cuerpo completo del error: " . $response->getBody());
             return null;
 
         } catch (\Exception $e) {

@@ -42,6 +42,7 @@ $routes->group('alerts', ['namespace' => 'App\Controllers', 'filter' => 'session
     $routes->post('resolve/(:num)', 'AlertController::resolve/$1', ['filter' => 'permission:empresas.edit']);
     $routes->post('delete/(:num)', 'AlertController::delete/$1', ['filter' => 'permission:empresas.edit']);
     $routes->post('bulk-action', 'AlertController::bulkAction', ['filter' => 'permission:empresas.edit']);
+    $routes->get('get-summary/(:num)', 'AlertController::getSummary/$1', ['filter' => 'permission:empresas.view']);
 });
 
 // Configuración de Email
@@ -53,9 +54,10 @@ $routes->group('email', ['namespace' => 'App\Controllers', 'filter' => 'session'
 
 // Configuración de IA
 $routes->group('ai', ['namespace' => 'App\Controllers', 'filter' => 'session'], function($routes) {
-    $routes->get('/', 'AIController::index', ['filter' => 'group:admin,superadmin']);
-    $routes->post('store', 'AIController::store', ['filter' => 'group:admin,superadmin']);
-    $routes->post('test', 'AIController::test', ['filter' => 'group:admin,superadmin']);
+    $routes->get('/', 'AIController::index', ['filter' => 'permission:ai.manage']);
+    $routes->post('store', 'AIController::store', ['filter' => 'permission:ai.manage']);
+    $routes->post('test', 'AIController::test', ['filter' => 'permission:ai.manage']);
+    $routes->post('get-models', 'AIController::getModels', ['filter' => 'permission:ai.manage']);
 });
 
 // Webhooks (Públicos o con validación de token propia)

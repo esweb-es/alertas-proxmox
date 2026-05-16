@@ -60,6 +60,14 @@ class HomeController extends BaseController
     {
         $alertasNuevas = $alertModel->where('empresa_id', $empresa->id)
                                      ->where('status', 'new')
+                                     ->groupStart()
+                                         ->like('severity', 'error')
+                                         ->orLike('severity', 'crit')
+                                         ->orLike('severity', 'emerg')
+                                         ->orLike('severity', 'alert')
+                                         ->orLike('severity', 'warn')
+                                         ->orLike('severity', 'notice')
+                                     ->groupEnd()
                                      ->findAll();
                                      
         $empresa->border_class = ''; 
@@ -68,7 +76,6 @@ class HomeController extends BaseController
         if ($badgeCount > 0) {
             $hasError = false;
             $hasWarning = false;
-            $hasInfo = false;
             
             foreach ($alertasNuevas as $alerta) {
                 $sev = strtolower($alerta->severity);
@@ -79,8 +86,6 @@ class HomeController extends BaseController
                     $hasError = true;
                 } elseif ($isWarn) {
                     $hasWarning = true;
-                } else {
-                    $hasInfo = true;
                 }
             }
             
@@ -88,8 +93,6 @@ class HomeController extends BaseController
                 $empresa->border_class = 'border-danger';
             } elseif ($hasWarning) {
                 $empresa->border_class = 'border-warning';
-            } else {
-                $empresa->border_class = 'border-info';
             }
         }
         

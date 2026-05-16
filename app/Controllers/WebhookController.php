@@ -93,7 +93,8 @@ class WebhookController extends BaseController
                         $summary = $aiService->generateSummary(
                             $alertaData['title'],
                             $alertaData['message'],
-                            $alertaData['severity']
+                            $alertaData['severity'],
+                            30 // Aumentado a 30s para mayor fiabilidad con modelos lentos
                         );
                         if ($summary) {
                             $alertModel->update($alertModel->getInsertID(), [
@@ -155,28 +156,35 @@ class WebhookController extends BaseController
         $email->setTo($empresa->email);
         $email->setSubject('⚠️ Alerta de Proxmox - ' . $alerta['title']);
         
+        $loginUrl = base_url('companies/view/' . $empresa->id);
+        
         $message = "
-            <div style='font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;'>
-                <div style='background: #5d87ff; padding: 20px; text-align: center; color: white;'>
-                    <h2 style='margin: 0;'>Nueva Alerta Crítica</h2>
+            <div style='font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 12px; overflow: hidden; background: #ffffff;'>
+                <div style='background: #5d87ff; padding: 25px; text-align: center; color: white;'>
+                    <h2 style='margin: 0; font-size: 20px;'>Notificación de Evento Crítico</h2>
                 </div>
-                <div style='padding: 20px;'>
-                    <p>Hola <b>{$empresa->nombre}</b>,</p>
-                    <p>Se ha detectado un evento importante en tu infraestructura Proxmox:</p>
-                    <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;'>
-                    <table style='width: 100%; border-collapse: collapse;'>
-                        <tr><td style='padding: 5px 0; color: #666;'>Título:</td><td style='font-weight: bold;'>{$alerta['title']}</td></tr>
-                        <tr><td style='padding: 5px 0; color: #666;'>Nodo/Host:</td><td style='font-weight: bold;'>{$alerta['hostname']}</td></tr>
-                        <tr><td style='padding: 5px 0; color: #666;'>Severidad:</td><td style='color: #5d87ff; font-weight: bold;'>{$alerta['severity']}</td></tr>
-                        <tr><td style='padding: 5px 0; color: #666;'>Fecha:</td><td>" . date('d/m/Y H:i:s') . "</td></tr>
-                    </table>
-                    <div style='background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;'>
-                        <p style='margin: 0; color: #333;'><b>Mensaje del sistema:</b></p>
-                        <p style='margin: 10px 0 0 0; font-family: monospace; font-size: 13px;'>{$alerta['message']}</p>
+                <div style='padding: 25px;'>
+                    <p style='color: #333; font-size: 16px;'>Hola <b>{$empresa->nombre}</b>,</p>
+                    <p style='color: #666; font-size: 14px;'>Se ha detectado una incidencia importante en tu infraestructura Proxmox que requiere tu atención.</p>
+                    
+                    <div style='margin: 25px 0; padding: 20px; border-radius: 8px; border: 1px solid #e5eaef; background: #fcfcfc;'>
+                        <table style='width: 100%; border-collapse: collapse;'>
+                            <tr><td style='padding: 6px 0; color: #888; font-size: 13px; width: 80px;'>Título:</td><td style='font-weight: bold; color: #222;'>{$alerta['title']}</td></tr>
+                            <tr><td style='padding: 6px 0; color: #888; font-size: 13px;'>Nodo:</td><td style='font-weight: bold; color: #222;'>{$alerta['hostname']}</td></tr>
+                            <tr><td style='padding: 6px 0; color: #888; font-size: 13px;'>Severidad:</td><td><span style='background: #fa896b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; text-transform: uppercase;'>{$alerta['severity']}</span></td></tr>
+                        </table>
                     </div>
+
+                    <div style='text-align: center; margin: 30px 0;'>
+                        <a href='{$loginUrl}' style='background: #5d87ff; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 4px 12px rgba(93, 135, 255, 0.2);'>
+                            Ver Detalles y Análisis IA
+                        </a>
+                    </div>
+
+                    <p style='color: #888; font-size: 13px; text-align: center;'>También puedes acceder manualmente desde tu panel de control.</p>
                 </div>
-                <div style='background: #f8f9fa; padding: 15px; text-align: center; color: #999; font-size: 12px;'>
-                    Este es un mensaje automático del sistema de alertas de Proxmox.
+                <div style='background: #f8f9fa; padding: 15px; text-align: center; color: #999; font-size: 11px; border-top: 1px solid #eee;'>
+                    Proxmox Alert System &bull; © " . date('Y') . "
                 </div>
             </div>
         ";
