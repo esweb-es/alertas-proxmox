@@ -151,7 +151,7 @@
                                             </td>
                                             <td class="text-center text-nowrap d-none d-sm-table-cell">
                                                 <?php 
-                                                    $isActionable = in_array(strtolower(trim($alerta->severity)), ['error', 'critical', 'warning', 'notice', 'unknown']);
+                                                    $isActionable = in_array(strtolower(trim($alerta->severity)), ['error', 'critical', 'warning', 'unknown']);
                                                 ?>
                                                 
                                                 <?php if ($isActionable): ?>
@@ -191,7 +191,7 @@
                                                         </li>
                                                         <?php endif; ?>
                                                         <?php 
-                                                            $canDelete = ($alerta->status === 'resolved' || strtolower(trim($alerta->severity)) === 'info');
+                                                            $canDelete = ($alerta->status === 'resolved' || !$isActionable);
                                                         ?>
                                                         <?php if ($canDelete && auth()->user()->can('empresas.edit')): ?>
                                                         <li>

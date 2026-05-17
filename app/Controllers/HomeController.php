@@ -78,7 +78,7 @@ class HomeController extends BaseController
                 $sev = strtolower(trim($alerta->severity));
                 
                 $isError = in_array($sev, ['error', 'critical', 'unknown']);
-                $isWarn  = in_array($sev, ['warning', 'notice']);
+                $isWarn  = in_array($sev, ['warning']);
 
                 if ($isError) {
                     $hasError = true;
