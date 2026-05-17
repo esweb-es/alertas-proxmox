@@ -116,6 +116,7 @@
                                             <td class="text-nowrap">
                                                 <?php 
                                                     $severityClass = 'bg-info';
+                                                    $severityLabel = esc($alerta->severity) ?: 'Info';
                                                     if (stripos($alerta->severity, 'error') !== false || stripos($alerta->severity, 'crit') !== false) {
                                                         $severityClass = 'bg-danger';
                                                         $severityLabel = 'Error';
