@@ -115,16 +115,28 @@
                                             </td>
                                             <td class="text-nowrap">
                                                 <?php 
-                                                    $severityClass = 'bg-info';
-                                                    $severityLabel = esc($alerta->severity) ?: 'Info';
-                                                    if (stripos($alerta->severity, 'error') !== false || stripos($alerta->severity, 'crit') !== false) {
+                                                    $sev = strtolower(trim($alerta->severity));
+                                                    $severityClass = 'bg-dark';
+                                                    $severityLabel = 'Desc.';
+
+                                                    if ($sev === 'info') {
+                                                        $severityClass = 'bg-info';
+                                                        $severityLabel = 'Info';
+                                                    } elseif ($sev === 'notice') {
+                                                        $severityClass = 'bg-primary';
+                                                        $severityLabel = 'Aviso';
+                                                    } elseif ($sev === 'warning') {
+                                                        $severityClass = 'bg-warning';
+                                                        $severityLabel = 'Alerta';
+                                                    } elseif ($sev === 'error') {
                                                         $severityClass = 'bg-danger';
                                                         $severityLabel = 'Error';
-                                                    } elseif (stripos($alerta->severity, 'warn') !== false) {
-                                                        $severityClass = 'bg-warning';
-                                                        $severityLabel = 'Aviso';
-                                                    } elseif (stripos($alerta->severity, 'info') !== false) {
-                                                        $severityLabel = 'Info';
+                                                    } elseif ($sev === 'critical') {
+                                                        $severityClass = 'bg-danger';
+                                                        $severityLabel = 'Crítico';
+                                                    } elseif ($sev === 'unknown') {
+                                                        $severityClass = 'bg-dark';
+                                                        $severityLabel = 'Desc.';
                                                     }
                                                 ?>
                                                 <span class="badge <?= $severityClass ?> fw-semibold fs-2 px-2 py-1 d-inline-block text-center" style="width: 80px;">
@@ -139,7 +151,7 @@
                                             </td>
                                             <td class="text-center text-nowrap d-none d-sm-table-cell">
                                                 <?php 
-                                                    $isActionable = (stripos($alerta->severity, 'error') !== false || stripos($alerta->severity, 'crit') !== false || stripos($alerta->severity, 'warn') !== false);
+                                                    $isActionable = in_array(strtolower(trim($alerta->severity)), ['error', 'critical', 'warning', 'notice', 'unknown']);
                                                 ?>
                                                 
                                                 <?php if ($isActionable): ?>
@@ -171,7 +183,7 @@
                                                                 <i class="ti ti-eye fs-4"></i> Ver Detalles
                                                             </a>
                                                         </li>
-                                                        <?php if ($alerta->status !== 'resolved' && (stripos($alerta->severity, 'error') !== false || stripos($alerta->severity, 'crit') !== false || stripos($alerta->severity, 'warn') !== false) && auth()->user()->can('empresas.edit')): ?>
+                                                        <?php if ($alerta->status !== 'resolved' && $isActionable && auth()->user()->can('empresas.edit')): ?>
                                                         <li>
                                                             <a class="dropdown-item d-flex align-items-center gap-2 text-dark resolve-alert-btn" href="javascript:void(0)" data-url="<?= base_url('alerts/resolve/' . $alerta->id) ?>">
                                                                 <i class="ti ti-check fs-4"></i> Solucionar Alerta
@@ -179,7 +191,7 @@
                                                         </li>
                                                         <?php endif; ?>
                                                         <?php 
-                                                            $canDelete = ($alerta->status === 'resolved' || in_array($alerta->severity, ['info', 'notice', 'debug']));
+                                                            $canDelete = ($alerta->status === 'resolved' || strtolower(trim($alerta->severity)) === 'info');
                                                         ?>
                                                         <?php if ($canDelete && auth()->user()->can('empresas.edit')): ?>
                                                         <li>
@@ -235,16 +247,28 @@
                 <div class="modal-body p-4">
                     <div class="d-flex flex-wrap align-items-center mb-4 gap-2">
                         <?php 
-                            $severityClass = 'bg-info';
-                            $severityLabel = esc($alerta->severity);
-                            if (stripos($alerta->severity, 'error') !== false || stripos($alerta->severity, 'crit') !== false) {
+                            $sevModal = strtolower(trim($alerta->severity));
+                            $severityClass = 'bg-dark';
+                            $severityLabel = 'Desc.';
+
+                            if ($sevModal === 'info') {
+                                $severityClass = 'bg-info';
+                                $severityLabel = 'Info';
+                            } elseif ($sevModal === 'notice') {
+                                $severityClass = 'bg-primary';
+                                $severityLabel = 'Aviso';
+                            } elseif ($sevModal === 'warning') {
+                                $severityClass = 'bg-warning';
+                                $severityLabel = 'Alerta';
+                            } elseif ($sevModal === 'error') {
                                 $severityClass = 'bg-danger';
                                 $severityLabel = 'Error';
-                            } elseif (stripos($alerta->severity, 'warn') !== false) {
-                                $severityClass = 'bg-warning';
-                                $severityLabel = 'Aviso';
-                            } elseif (stripos($alerta->severity, 'info') !== false) {
-                                $severityLabel = 'Info';
+                            } elseif ($sevModal === 'critical') {
+                                $severityClass = 'bg-danger';
+                                $severityLabel = 'Crítico';
+                            } elseif ($sevModal === 'unknown') {
+                                $severityClass = 'bg-dark';
+                                $severityLabel = 'Desc.';
                             }
                         ?>
                         <span class="badge <?= $severityClass ?> fw-semibold fs-2 px-2 py-1 d-inline-block text-center me-3" style="width: 80px;"><?= $severityLabel ?></span>

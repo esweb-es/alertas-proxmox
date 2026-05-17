@@ -58,17 +58,14 @@ class HomeController extends BaseController
     // ---------------------------------------------------------------------
     private function calculateStatus(&$empresa, $alertModel)
     {
-        $alertasNuevas = $alertModel->where('empresa_id', $empresa->id)
+        $alertasNuevasRaw = $alertModel->where('empresa_id', $empresa->id)
                                      ->where('status', 'new')
-                                     ->groupStart()
-                                         ->like('severity', 'error')
-                                         ->orLike('severity', 'crit')
-                                         ->orLike('severity', 'emerg')
-                                         ->orLike('severity', 'alert')
-                                         ->orLike('severity', 'warn')
-                                         ->orLike('severity', 'notice')
-                                     ->groupEnd()
                                      ->findAll();
+                                     
+        // Filtrar 'info' puramente informativas
+        $alertasNuevas = array_filter($alertasNuevasRaw, function($alerta) {
+            return strtolower(trim($alerta->severity)) !== 'info';
+        });
                                      
         $empresa->border_class = ''; 
         $badgeCount = count($alertasNuevas);
@@ -78,9 +75,10 @@ class HomeController extends BaseController
             $hasWarning = false;
             
             foreach ($alertasNuevas as $alerta) {
-                $sev = strtolower($alerta->severity);
-                $isError = (strpos($sev, 'error') !== false || strpos($sev, 'crit') !== false || strpos($sev, 'emerg') !== false || strpos($sev, 'alert') !== false);
-                $isWarn  = (strpos($sev, 'warn') !== false || strpos($sev, 'notice') !== false);
+                $sev = strtolower(trim($alerta->severity));
+                
+                $isError = in_array($sev, ['error', 'critical', 'unknown']);
+                $isWarn  = in_array($sev, ['warning', 'notice']);
 
                 if ($isError) {
                     $hasError = true;

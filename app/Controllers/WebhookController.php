@@ -76,12 +76,10 @@ class WebhookController extends BaseController
             log_message('info', 'Alerta guardada para ' . $empresa->nombre . ': ' . $title);
             
             // Lógica de envío de Email si está activado y es una alerta importante
-            $isError = (stripos($alertaData['severity'], 'error') !== false || 
-                        stripos($alertaData['severity'], 'crit') !== false || 
-                        stripos($alertaData['severity'], 'emerg') !== false ||
-                        stripos($alertaData['severity'], 'alert') !== false);
+            $sev = strtolower(trim($alertaData['severity']));
+            $isImportant = in_array($sev, ['error', 'critical', 'warning', 'unknown']);
             
-            if ($empresa->send_email && $isError && !empty($empresa->email)) {
+            if ($empresa->send_email && $isImportant && !empty($empresa->email)) {
                 $this->sendAlertEmail($empresa, $alertaData);
             }
 
