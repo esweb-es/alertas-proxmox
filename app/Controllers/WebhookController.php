@@ -28,6 +28,14 @@ class WebhookController extends BaseController
             return $this->failForbidden('La empresa asociada a este Webhook está inactiva.');
         }
 
+        // Si la petición no es POST, devolver una respuesta informativa de diagnóstico
+        if (strtolower($this->request->getMethod()) !== 'post') {
+            return $this->respond([
+                'status'  => 'success',
+                'message' => 'El endpoint del Webhook está activo y configurado correctamente para la empresa "' . $empresa->nombre . '". Para registrar alertas reales, debes enviar una petición POST con los datos del evento.'
+            ], 200);
+        }
+
         // Obtener el cuerpo de la petición (JSON)
         $json = $this->request->getJSON();
         
