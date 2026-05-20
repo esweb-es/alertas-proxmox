@@ -45,6 +45,21 @@ class MonitoringController extends BaseController
 
             [$isReachable, $output] = $this->runPing($host);
 
+            // Extraer latencia si el host responde
+            $latency = null;
+            if ($isReachable) {
+                $latency = $this->parseLatency($output);
+            }
+
+            // Registrar el log de disponibilidad y latencia
+            $pingLogModel = new \App\Models\PingLogModel();
+            $pingLogModel->insert([
+                'empresa_id' => $empresa->id,
+                'status'     => $isReachable ? 'online' : 'offline',
+                'latency'    => $latency,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+
             if ($isReachable) {
                 $summary['ok']++;
                 if ($this->resolveOpenPingAlert($alertModel, (int) $empresa->id, $host)) {
@@ -84,6 +99,11 @@ class MonitoringController extends BaseController
                 $summary['alerts_skipped']++;
             }
         }
+
+        // Limpiar registros antiguos (más de 7 días) para no saturar SQLite
+        $pingLogModel = new \App\Models\PingLogModel();
+        $sevenDaysAgo = date('Y-m-d H:i:s', strtotime('-7 days'));
+        $pingLogModel->where('created_at <', $sevenDaysAgo)->delete();
 
         return $this->response->setJSON([
             'ok' => true,
@@ -222,5 +242,23 @@ class MonitoringController extends BaseController
         }
 
         log_message('info', 'Email de alerta (cron ping) enviado correctamente a ' . $empresa->email);
+    }
+
+    // ---------------------------------------------------------------------
+    // Extraer latencia media del comando ping (soporta Darwin y Linux)
+    // ---------------------------------------------------------------------
+    private function parseLatency(string $output): ?float
+    {
+        // 1. Intentar extraer latencia individual de respuesta del paquete (time=XX.XX ms)
+        if (preg_match('/time=([0-9.]+)\s*ms/i', $output, $matches)) {
+            return (float) $matches[1];
+        }
+
+        // 2. Fallback: buscar latencia promedio en las estadísticas RTT (round-trip/rtt min/avg/max/stddev = .../avg/...)
+        if (preg_match('/(?:round-trip|rtt)\s+\S+\s+=\s+[0-9.]+\/([0-9.]+)\/[0-9.]+\/[0-9.]+/i', $output, $matches)) {
+            return (float) $matches[1];
+        }
+
+        return null;
     }
 }

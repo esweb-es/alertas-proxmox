@@ -35,6 +35,202 @@
         </div>
     </div>
 
+    <!-- Monitoreo de Disponibilidad y Latencia (Ping Uptime) -->
+    <?php if (!empty($empresa->proxmox_host)): ?>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <?php $lastLog = end($pingLogs); ?>
+    
+    <style>
+        @keyframes telemetry-pulse {
+            0% { transform: scale(0.9); opacity: 0.5; }
+            50% { transform: scale(1.25); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.5; }
+        }
+        .telemetry-led {
+            animation: telemetry-pulse 2s infinite ease-in-out;
+            display: inline-block;
+        }
+        .telemetry-card {
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8) !important;
+            transition: all 0.3s ease;
+        }
+        [data-bs-theme="dark"] .telemetry-card {
+            background: rgba(30, 41, 59, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        }
+        .telemetry-spin {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .telemetry-spin:hover {
+            transform: rotate(180deg);
+        }
+    </style>
+
+    <div class="card telemetry-card shadow-sm mb-4">
+        <div class="card-body p-3">
+            <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between mb-3 gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="p-1 bg-light-<?= ($lastLog && $lastLog->status === 'online') ? 'success' : (($lastLog) ? 'danger' : 'secondary') ?> rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                        <span class="telemetry-led bg-<?= ($lastLog && $lastLog->status === 'online') ? 'success' : (($lastLog) ? 'danger' : 'secondary') ?> rounded-circle" style="width: 8px; height: 8px;"></span>
+                    </span>
+                    <div>
+                        <span class="text-muted text-uppercase fw-semibold d-block mb-0" style="font-size: 8px; letter-spacing: 0.5px;">Monitoreo de Host</span>
+                        <h6 class="fw-bold mb-0 font-monospace text-body" style="font-size: 0.85rem;"><?= esc($empresa->proxmox_host) ?></h6>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <!-- Pill Uptime -->
+                    <div class="px-2 py-1 rounded bg-light-primary text-primary fw-semibold fs-2 d-flex align-items-center gap-1">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Uptime: <?= ($uptimePercentage !== null) ? $uptimePercentage . '%' : 'Sin datos' ?></span>
+                    </div>
+                    
+                    <!-- Pill Latency -->
+                    <div class="px-2 py-1 rounded bg-light-info text-info fw-semibold fs-2 d-flex align-items-center gap-1">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span>Latencia Avg: <?= ($averageLatency !== null) ? $averageLatency . ' ms' : 'N/A' ?></span>
+                    </div>
+                    
+                    <button class="btn btn-link p-0 text-muted fs-3 border-0 text-decoration-none telemetry-spin ms-1" onclick="window.location.reload();" title="Recargar">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div style="position: relative; height: 120px; width: 100%;">
+                <canvas id="uptimeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de configuración de Chart.js -->
+    <?php if (!empty($pingLogs)): ?>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('uptimeChart');
+        if (!ctx) return;
+
+        const rawLogs = <?= json_encode($pingLogs) ?>;
+        
+        const labels = rawLogs.map(log => {
+            const d = new Date(log.created_at);
+            return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }) + ' ' + 
+                   d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        });
+        
+        const latencyData = rawLogs.map(log => {
+            return log.status === 'online' ? parseFloat(log.latency || 0) : null;
+        });
+
+        const statusColors = rawLogs.map(log => {
+            return log.status === 'online' ? 'rgba(19, 222, 185, 0.9)' : 'rgba(250, 137, 107, 1)';
+        });
+
+        const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+        const textColor = isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)';
+
+        const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 120);
+        gradient.addColorStop(0, 'rgba(19, 222, 185, 0.2)');
+        gradient.addColorStop(1, 'rgba(19, 222, 185, 0.0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Latencia (ms)',
+                    data: latencyData,
+                    borderColor: '#13deb9',
+                    borderWidth: 2,
+                    pointBackgroundColor: statusColors,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 0.5,
+                    pointRadius: rawLogs.length > 50 ? 1 : 3,
+                    pointHoverRadius: 5,
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.35,
+                    spanGaps: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: '#1e293b',
+                        titleColor: '#f1f5f9',
+                        bodyColor: '#f1f5f9',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        padding: 8,
+                        cornerRadius: 6,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                const index = context.dataIndex;
+                                const log = rawLogs[index];
+                                const d = new Date(log.created_at);
+                                const timeStr = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }) + ' ' + 
+                                                     d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                                if (log.status === 'online') {
+                                    return `⚡ ${timeStr}: ${context.parsed.y} ms`;
+                                } else {
+                                    return `❌ ${timeStr}: Caído (Sin respuesta)`;
+                                }
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: textColor,
+                            font: {
+                                size: 8
+                            },
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 6
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: gridColor
+                        },
+                        ticks: {
+                            color: textColor,
+                            font: {
+                                size: 8
+                            },
+                            callback: function(value) {
+                                return value + ' ms';
+                            },
+                            maxTicksLimit: 4
+                        },
+                        suggestedMin: 0
+                    }
+                }
+            }
+        });
+    });
+    </script>
+    <?php endif; ?>
+    <?php endif; ?>
+
+
     <div class="row">
         <div class="col-lg-12">
             <div class="card">
@@ -344,3 +540,36 @@ function submitBulkAction(action) {
     });
 }
 </script>
+
+<style>
+.card-metric {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-metric:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08) !important;
+}
+.card-chart-container {
+    transition: all 0.3s ease;
+}
+/* Pulse animation for LED status blob */
+.blob.bg-success { animation: pulse-success-view 2s infinite; }
+.blob.bg-danger { animation: pulse-danger-view 2s infinite; }
+.blob.bg-secondary { animation: pulse-secondary-view 2s infinite; }
+
+@keyframes pulse-success-view {
+    0% { box-shadow: 0 0 0 0 rgba(19, 222, 185, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(19, 222, 185, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(19, 222, 185, 0); }
+}
+@keyframes pulse-danger-view {
+    0% { box-shadow: 0 0 0 0 rgba(250, 137, 107, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(250, 137, 107, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(250, 137, 107, 0); }
+}
+@keyframes pulse-secondary-view {
+    0% { box-shadow: 0 0 0 0 rgba(108, 117, 125, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(108, 117, 125, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(108, 117, 125, 0); }
+}
+</style>

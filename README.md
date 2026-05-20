@@ -185,7 +185,7 @@ Recomendación:
 5. Revisar usuarios activos y permisos.
 
 ## 11. Monitoreo de ping por cron (token interno)
-El sistema incluye un endpoint interno para ejecutar chequeo masivo de ping en todas las empresas activas con `proxmox_host` configurado.
+El sistema incluye un endpoint interno para ejecutar un chequeo masivo de ping y monitorear la disponibilidad en tiempo real de todas las empresas activas con `proxmox_host` configurado.
 
 Configuración en `.env`:
 - `cron.pingToken = 'TOKEN_LARGO_Y_SEGURO'`
@@ -197,25 +197,28 @@ Ejemplo:
 - `https://tudominio.com/monitoring/ping-check/TU_TOKEN`
 
 Qué hace:
-- Recorre empresas activas con host configurado.
-- Ejecuta ping a cada host.
-- Si falla, crea alerta en `alertas` con:
-  - `title`: `Proxmox no responde`
-  - `message`: `Incidente de conectividad detectado en {host}. Caída registrada a las {YYYY-MM-DD HH:MM:SS}.`
-- Si el host vuelve a responder, resuelve automáticamente la alerta abierta con:
-  - `message`: `Conectividad restablecida en {host} a las {YYYY-MM-DD HH:MM:SS}.`
-- Deduplicación por estado: mientras exista una alerta de ping abierta para la empresa, no crea duplicados.
+- **Prueba de Red y Latencia**: Recorre las empresas activas con host configurado, ejecuta una consulta por ping y calcula la latencia exacta de respuesta (soportando formatos de consola Linux y macOS/Darwin).
+- **Historial de Disponibilidad (`ping_logs`)**: Almacena cada evento en base de datos para medir el porcentaje de disponibilidad (Uptime %) e histórico de latencias.
+- **Autolimpieza (Anti-Bloat)**: Para mantener la base de datos SQLite ligera y rápida, el cron elimina automáticamente los logs de ping con más de **7 días de antigüedad** en cada ejecución.
+- **Gestión Inteligente de Alertas**:
+  - Si el host falla, crea una alerta de severidad crítica (`error`) con la descripción del incidente.
+  - Si el host se recupera, cambia automáticamente el estado de la alerta anterior a `resolved` (resuelto) e inyecta la marca de tiempo de recuperación.
+  - Posee deduplicación de eventos en cola para evitar saturar el historial mientras la caída permanezca activa.
+- **Métricas & Gráficos Premium (UI)**: 
+  * En la vista de detalle de cada empresa (`/companies/view/{id}`), se incorpora un panel de telemetría de ancho completo muy compacto y premium.
+  * **Header integrado**: Muestra el host con un LED parpadeante dinámico de estado (online/offline), una micro-cápsula con el **Uptime %** calculado sobre las últimas 100 pruebas y una micro-cápsula con la **Latencia Media**.
+  * **Gráfico Neon (Chart.js)**: Un gráfico de líneas detallado de 120px de alto que representa la variación de latencia de las últimas 100 pruebas, adaptándose dinámicamente con luces y sombras neón al tema claro u oscuro del usuario.
 
-Respuesta:
-- Devuelve JSON con resumen: `total`, `ok`, `failed`, `alerts_created`, `alerts_skipped`, `alerts_resolved`.
+Respuesta del Endpoint:
+- Devuelve un JSON resumido: `total`, `ok`, `failed`, `alerts_created`, `alerts_skipped`, `alerts_resolved`.
 
 Uso recomendado en hosting (Cron):
-1. Crear tarea programada cada 5 minutos.
-2. Ejecutar llamada HTTP GET al endpoint con token.
+1. Crear una tarea programada en tu hosting (ej: cPanel Cron) cada 5 minutos.
+2. Ejecutar una llamada HTTP GET al endpoint con tu token de seguridad.
 
 Seguridad:
-- Mantener el token solo en `.env`.
-- Rotar token si se comparte o filtra.
+- Mantener el token solo en el archivo `.env`.
+- Rotar el token si se comparte o filtra.
 - No publicar el enlace en lugares públicos.
 
 ## 12. Resolución de problemas

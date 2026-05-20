@@ -160,12 +160,34 @@ class CompanyController extends BaseController
             }
         }
 
+        // Obtener historial de pings para disponibilidad y latencia (últimos 100 registros)
+        $pingLogModel = new \App\Models\PingLogModel();
+        $pingLogs = $pingLogModel->where('empresa_id', $id)
+                                 ->orderBy('created_at', 'DESC')
+                                 ->limit(100)
+                                 ->findAll();
+        
+        // Invertir para mostrar en orden cronológico (ASC) en el gráfico
+        $pingLogs = array_reverse($pingLogs);
+
+        // Calcular porcentaje de Uptime
+        $totalChecks = count($pingLogs);
+        $onlineChecks = count(array_filter($pingLogs, function($log) { return $log->status === 'online'; }));
+        $uptimePercentage = $totalChecks > 0 ? round(($onlineChecks / $totalChecks) * 100, 2) : null;
+
+        // Calcular latencia promedio
+        $latencies = array_filter(array_column($pingLogs, 'latency'));
+        $averageLatency = count($latencies) > 0 ? round(array_sum($latencies) / count($latencies), 2) : null;
+
         $data = [
             'title'            => 'Alertas de ' . $empresa->nombre,
             'empresa'          => $empresa,
             'alertas'          => $query->orderBy('created_at', 'DESC')->paginate(50),
             'pager'            => $alertModel->pager,
-            'current_severity' => $severityFilter
+            'current_severity' => $severityFilter,
+            'pingLogs'         => $pingLogs,
+            'uptimePercentage' => $uptimePercentage,
+            'averageLatency'   => $averageLatency
         ];
 
         return view('template/header', $data)
